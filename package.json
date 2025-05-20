@@ -1,0 +1,32 @@
+{
+  "name": "week08",
+  "version": "1.0.0",
+  "description": "Patient management app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "method-override": "^3.0.0",
+    "mongoose": "^8.12.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xRaiinBow-Coder/L5W8.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xRaiinBow-Coder/L5W8/issues"
+  },
+  "homepage": "https://github.com/xRaiinBow-Coder/L5W8#readme"
+}
+
