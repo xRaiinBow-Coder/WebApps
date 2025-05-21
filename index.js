@@ -5,21 +5,18 @@ const methodOverride = require("method-override");
 
 const app = express();
 
-// Connect to MongoDB
 mongoose.connect("mongodb://20.0.153.128:10999/KieranDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("MongoDB Connected to KieranDB"))
-  .catch((err) => console.error("MongoDB Connection Error:", err));
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.error("MongoDB Error:", err));
 
-// Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride("_method"));
 app.set("view engine", "ejs");
 
-// Patient Schema
 const PatientSchema = new mongoose.Schema({
   name: { type: String, required: true },
   age: { type: Number, required: true },
@@ -31,29 +28,39 @@ const PatientSchema = new mongoose.Schema({
 
 const Patient = mongoose.model("Patient", PatientSchema);
 
-// Routes
+const RoomSchema = new mongoose.Schema({
+  number: { type: String, required: true },
+  type: { type: String, required: true },
+  capacity: { type: Number, required: true },
+  occupants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Patient' }],
+});
 
-// Redirect root to /patients
+const Room = mongoose.model("Room", RoomSchema);
+
 app.get("/", (req, res) => {
   res.redirect("/patients");
 });
 
-// List all patients
 app.get("/patients", async (req, res) => {
   try {
     const patients = await Patient.find();
     res.render("patients", { patients });
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error fetching patients");
   }
 });
 
-// Show form to create new patient
-app.get("/patient/new", (req, res) => {
-  res.render("new_patient");
+app.get("/patient/new", async (req, res) => {
+  try {
+    const rooms = await Room.find().populate("occupants");
+    res.render("new_patient", { rooms });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error loading patient form");
+  }
 });
 
-// Create a new patient
 app.post("/patient", async (req, res) => {
   try {
     const newPatient = new Patient({
@@ -63,36 +70,86 @@ app.post("/patient", async (req, res) => {
       allergies: req.body.allergies ? req.body.allergies.split(',').map(a => a.trim()) : [],
       medicalConditions: req.body.medicalConditions ? req.body.medicalConditions.split(',').map(c => c.trim()) : [],
     });
+
     await newPatient.save();
+
+    if (req.body.roomId) {
+      const room = await Room.findById(req.body.roomId).populate("occupants");
+      if (room && room.occupants.length < room.capacity) {
+        room.occupants.push(newPatient._id);
+        await room.save();
+      }
+    }
+
     res.redirect("/patients");
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error adding patient");
   }
 });
 
-// Show single patient details
 app.get("/patient/:id", async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
-    res.render("patient", { patient });
+
+    // Find the room the patient is currently assigned to
+    const room = await Room.findOne({ occupants: patient._id });
+
+    // Get all rooms for the dropdown in reassignment form
+    const rooms = await Room.find().populate("occupants");
+
+    res.render("patient", { patient, room, rooms });
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error fetching patient");
   }
 });
 
-// Show form to edit patient
+app.post("/patient/:id/assign-room", async (req, res) => {
+  try {
+    const patientId = req.params.id;
+    const newRoomId = req.body.roomId;
+
+    if (!newRoomId) {
+      return res.status(400).send("Room ID is required");
+    }
+
+    
+    await Room.updateMany(
+      { occupants: patientId },
+      { $pull: { occupants: patientId } }
+    );
+
+    const newRoom = await Room.findById(newRoomId).populate("occupants");
+    if (!newRoom) return res.status(404).send("Room not found");
+
+    if (newRoom.occupants.length >= newRoom.capacity) {
+      return res.status(400).send("Room is full");
+    }
+
+    newRoom.occupants.push(patientId);
+    await newRoom.save();
+
+    res.redirect(`/patient/${patientId}`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error assigning room");
+  }
+});
+
+
 app.get("/patient/:id/edit", async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
     res.render("edit_patient", { patient });
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error fetching patient");
   }
 });
 
-// Update patient
 app.put("/patient/:id", async (req, res) => {
   try {
     const updatedData = {
@@ -106,22 +163,61 @@ app.put("/patient/:id", async (req, res) => {
     if (!patient) return res.status(404).send("Patient Not Found");
     res.redirect("/patients");
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error updating patient");
   }
 });
 
-// Delete patient
 app.delete("/patient/:id", async (req, res) => {
   try {
     const patient = await Patient.findByIdAndDelete(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
+
+    await Room.updateMany(
+      { occupants: patient._id },
+      { $pull: { occupants: patient._id } }
+    );
+
     res.redirect("/patients");
   } catch (error) {
+    console.error(error);
     res.status(500).send("Error deleting patient");
   }
 });
 
-// Start server
-app.listen(10049, '0.0.0.0', () => {
-  console.log("Server is running on port 10049");
+app.get("/rooms", async (req, res) => {
+  try {
+    const rooms = await Room.find().populate("occupants");
+    res.render("rooms", { rooms });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error fetching rooms");
+  }
+});
+
+app.get("/room/new", (req, res) => {
+  res.render("new_room");  
+});
+
+app.post("/room", async (req, res) => {
+  try {
+    const { number, type, capacity } = req.body;
+
+    const newRoom = new Room({
+      number,
+      type,
+      capacity,
+      occupants: [],
+    });
+
+    await newRoom.save();
+    res.redirect("/rooms");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error creating room");
+  }
+});
+
+app.listen(10049, "0.0.0.0", () => {
+  console.log("Server running on port 10049");
 });

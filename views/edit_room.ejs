@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edit Room <%= room.number %></title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+  <style>
+    :root {
+      --forest-green: #2F4F4F;
+      --forest-green-light: #3D6B6B;
+      --forest-green-dark: #223838;
+    }
+    body {
+      background-color: #F5F6F0;
+      color: var(--forest-green-dark);
+    }
+    h1 {
+      color: var(--forest-green-dark);
+    }
+    .btn-primary {
+      background-color: var(--forest-green);
+      border-color: var(--forest-green);
+    }
+    .btn-primary:hover {
+      background-color: var(--forest-green-dark);
+      border-color: var(--forest-green-dark);
+    }
+    .form-check-label {
+      color: var(--forest-green-dark);
+    }
+  </style>
+</head>
+<body>
+<div class="container mt-5">
+  <h1>Edit Room <%= room.number %></h1>
+
+  <form action="/room/<%= room._id %>?_method=PUT" method="POST">
+    <div class="mb-3">
+      <label for="number" class="form-label">Room Number</label>
+      <input
+        type="text"
+        id="number"
+        name="number"
+        class="form-control"
+        value="<%= room.number %>"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="type" class="form-label">Room Type</label>
+      <input
+        type="text"
+        id="type"
+        name="type"
+        class="form-control"
+        value="<%= room.type %>"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="capacity" class="form-label">Capacity</label>
+      <input
+        type="number"
+        id="capacity"
+        name="capacity"
+        class="form-control"
+        value="<%= room.capacity %>"
+        min="1"
+        required
+      />
+    </div>
+
+    <h5>Occupants</h5>
+    <p>Select patients to assign to this room (capacity: <%= room.capacity %>)</p>
+
+    <% patients.forEach(patient => { %>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          name="occupants"
+          value="<%= patient._id %>"
+          id="patient_<%= patient._id %>"
+          <% if (room.occupants.some(o => o._id.toString() === patient._id.toString())) { %> checked <% } %>
+        />
+        <label class="form-check-label" for="patient_<%= patient._id %>">
+          <%= patient.name %>
+        </label>
+      </div>
+    <% }) %>
+
+    <button type="submit" class="btn btn-primary mt-3">Save Changes</button>
+    <a href="/rooms" class="btn btn-outline-primary mt-3 ms-2">Cancel</a>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+</html>

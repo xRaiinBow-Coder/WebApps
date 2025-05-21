@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create New Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      max-width: 400px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #007BFF;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    a {
+      display: inline-block;
+      margin-top: 25px;
+      text-decoration: none;
+      color: #007BFF;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Create a New Room</h1>
+
+  <form action="/room" method="POST" novalidate>
+    <label for="number">Room Number:</label>
+    <input type="text" id="number" name="number" required placeholder="Enter room number" />
+
+    <label for="type">Room Type:</label>
+    <select id="type" name="type" required>
+      <option value="general">General Ward</option>
+      <option value="isolation">Isolation</option>
+    </select>
+
+    <label for="capacity">Capacity:</label>
+    <input type="number" id="capacity" name="capacity" min="1" required placeholder="Enter capacity" />
+
+    <button type="submit">Create Room</button>
+  </form>
+
+  <a href="/rooms">Back to Room List</a>
+</body>
+</html>
