@@ -17,7 +17,6 @@ app.use(express.json());
 app.use(methodOverride("_method"));
 app.set("view engine", "ejs");
 
-// Patient Schema
 const PatientSchema = new mongoose.Schema({
   name: { type: String, required: true },
   age: { type: Number, required: true },
@@ -34,7 +33,7 @@ const PatientSchema = new mongoose.Schema({
 
 const Patient = mongoose.model("Patient", PatientSchema);
 
-// Room Schema
+
 const RoomSchema = new mongoose.Schema({
   number: { type: String, required: true },
   type: { type: String, required: true }, // e.g. 'general', 'isolation', 'waiting'
@@ -48,7 +47,7 @@ app.get("/", (req, res) => {
   res.redirect("/patients");
 });
 
-// List patients
+
 app.get("/patients", async (req, res) => {
   try {
     const patients = await Patient.find();
@@ -59,7 +58,7 @@ app.get("/patients", async (req, res) => {
   }
 });
 
-// Show new patient form
+
 app.get("/patient/new", async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
@@ -70,7 +69,7 @@ app.get("/patient/new", async (req, res) => {
   }
 });
 
-// Add new patient
+
 app.post("/patient", async (req, res) => {
   try {
     const medicalConditions = req.body.medicalConditions
@@ -103,8 +102,7 @@ app.post("/patient", async (req, res) => {
     let assignedRoom = null;
 
     if (requiresIsolation) {
-      // Ignore non-isolation rooms if patient requires isolation
-      // Assign to isolation room if selected and available
+  
       if (req.body.roomId && req.body.roomId !== "waiting-room" && req.body.roomId !== "none") {
         const selectedRoom = await Room.findById(req.body.roomId).populate("occupants");
         if (
@@ -116,7 +114,6 @@ app.post("/patient", async (req, res) => {
         }
       }
 
-      // If no valid isolation room selected, assign to quarantine isolation room
       if (!assignedRoom) {
         assignedRoom = await Room.findOne({ number: "Quarantine", type: "isolation" });
         if (!assignedRoom) {
@@ -130,8 +127,6 @@ app.post("/patient", async (req, res) => {
         }
       }
     } else {
-      // Patient does NOT require isolation
-      // Assign to selected room only if it is NOT isolation type
       if (req.body.roomId && req.body.roomId !== "waiting-room" && req.body.roomId !== "none") {
         const selectedRoom = await Room.findById(req.body.roomId).populate("occupants");
         if (
@@ -143,7 +138,6 @@ app.post("/patient", async (req, res) => {
         }
       }
 
-      // Otherwise, assign to waiting room
       if (!assignedRoom) {
         assignedRoom = await Room.findOne({ number: "Waiting Room", type: "waiting" });
         if (!assignedRoom) {
@@ -170,7 +164,6 @@ app.post("/patient", async (req, res) => {
 
 
 
-// Show patient detail with room info and rooms for reassignment
 app.get("/patient/:id", async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
@@ -186,7 +179,6 @@ app.get("/patient/:id", async (req, res) => {
   }
 });
 
-// Assign room to patient (reassignment)
 app.post("/patient/:id/assign-room", async (req, res) => {
   try {
     const patientId = req.params.id;
@@ -196,13 +188,11 @@ app.post("/patient/:id/assign-room", async (req, res) => {
       return res.status(400).send("Room ID is required");
     }
 
-    // Remove patient from current rooms
     await Room.updateMany(
       { occupants: patientId },
       { $pull: { occupants: patientId } }
     );
 
-    // Add patient to new room if capacity allows
     const newRoom = await Room.findById(newRoomId).populate("occupants");
     if (!newRoom) return res.status(404).send("Room not found");
 
@@ -220,7 +210,6 @@ app.post("/patient/:id/assign-room", async (req, res) => {
   }
 });
 
-// Edit patient form
 app.get("/patient/:id/edit", async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
@@ -232,7 +221,6 @@ app.get("/patient/:id/edit", async (req, res) => {
   }
 });
 
-// Update patient
 app.put("/patient/:id", async (req, res) => {
   try {
     const updatedData = {
@@ -258,7 +246,6 @@ app.put("/patient/:id", async (req, res) => {
   }
 });
 
-// Delete patient
 app.delete("/patient/:id", async (req, res) => {
   try {
     const patient = await Patient.findByIdAndDelete(req.params.id);
@@ -276,7 +263,6 @@ app.delete("/patient/:id", async (req, res) => {
   }
 });
 
-// List rooms
 app.get("/rooms", async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
@@ -287,12 +273,10 @@ app.get("/rooms", async (req, res) => {
   }
 });
 
-// Show new room form
 app.get("/room/new", (req, res) => {
   res.render("new_room");
 });
 
-// Create new room
 app.post("/room", async (req, res) => {
   try {
     const { number, type, capacity } = req.body;

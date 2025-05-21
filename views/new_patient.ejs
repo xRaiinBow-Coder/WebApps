@@ -85,14 +85,12 @@
         <div class="form-text">Leave blank if none.</div>
       </div>
 
-      <!-- Medical Conditions group (will toggle) -->
       <div class="mb-3" id="medicalConditionsGroup">
         <label for="medicalConditions" class="form-label">Medical Conditions (comma-separated)</label>
         <input type="text" class="form-control" id="medicalConditions" name="medicalConditions" placeholder="e.g. diabetes, hypertension">
         <div class="form-text">Leave blank if none.</div>
       </div>
 
-      <!-- Isolation Status checkboxes -->
       <div class="mb-3">
         <label class="form-label">Isolation Status</label>
         <div class="form-check">
@@ -151,7 +149,6 @@
       Array.prototype.slice.call(forms)
         .forEach(function (form) {
           form.addEventListener('submit', function (event) {
-            // Prevent selecting both "None" and others
             const isolationCheckboxes = form.querySelectorAll('input[type="checkbox"][name="covid"], input[type="checkbox"][name="tuberculosis"], input[type="checkbox"][name="ebola"], input[type="checkbox"][name="none"]');
             let noneChecked = false;
             let othersChecked = false;
@@ -174,7 +171,6 @@
         })
     })()
 
-    // Isolation checkbox toggle logic
     const covidCB = document.getElementById('covid');
     const tbCB = document.getElementById('tuberculosis');
     const ebolaCB = document.getElementById('ebola');
