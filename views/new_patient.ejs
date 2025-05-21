@@ -44,6 +44,12 @@
     .invalid-feedback {
       color: #dc3545;
     }
+    .badge-isolation {
+      background-color: #dc3545;
+      color: white;
+      font-size: 0.75rem;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
@@ -79,23 +85,55 @@
         <div class="form-text">Leave blank if none.</div>
       </div>
 
-      <div class="mb-3">
+      <!-- Medical Conditions group (will toggle) -->
+      <div class="mb-3" id="medicalConditionsGroup">
         <label for="medicalConditions" class="form-label">Medical Conditions (comma-separated)</label>
         <input type="text" class="form-control" id="medicalConditions" name="medicalConditions" placeholder="e.g. diabetes, hypertension">
         <div class="form-text">Leave blank if none.</div>
       </div>
 
+      <!-- Isolation Status checkboxes -->
+      <div class="mb-3">
+        <label class="form-label">Isolation Status</label>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid">
+          <label class="form-check-label" for="covid">COVID-19</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis">
+          <label class="form-check-label" for="tuberculosis">Tuberculosis</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola">
+          <label class="form-check-label" for="ebola">Ebola</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="none" id="none" checked>
+          <label class="form-check-label" for="none">None</label>
+        </div>
+        <div class="form-text">Select all that apply. Select "None" if no isolation required.</div>
+      </div>
+
       <div class="mb-3">
         <label for="roomId" class="form-label">Assign Room</label>
-        <select class="form-select" id="roomId" name="roomId" required>
+        <select class="form-select" id="roomId" name="roomId" >
           <option value="">Select room</option>
+          <% let hasAvailableRoom = false; %>
           <% rooms.forEach(room => { 
                const availableSpots = room.capacity - room.occupants.length;
-               if (availableSpots > 0) { %>
+               if (availableSpots > 0) { 
+                 hasAvailableRoom = true;
+          %>
             <option value="<%= room._id %>">
-              Room <%= room.number %> — <%= availableSpots %> spot(s) available
+              Room <%= room.number %> — <%= availableSpots %> spot(s)
+              <% if (room.type === 'isolation') { %>
+                [Isolation]
+              <% } %>
             </option>
           <% } }); %>
+          <% if (!hasAvailableRoom) { %>
+            <option value="waiting-room" selected>Waiting Room (No rooms available)</option>
+          <% } %>
         </select>
         <div class="invalid-feedback">Please select a room with available capacity.</div>
       </div>
@@ -113,6 +151,20 @@
       Array.prototype.slice.call(forms)
         .forEach(function (form) {
           form.addEventListener('submit', function (event) {
+            // Prevent selecting both "None" and others
+            const isolationCheckboxes = form.querySelectorAll('input[type="checkbox"][name="covid"], input[type="checkbox"][name="tuberculosis"], input[type="checkbox"][name="ebola"], input[type="checkbox"][name="none"]');
+            let noneChecked = false;
+            let othersChecked = false;
+            isolationCheckboxes.forEach(cb => {
+              if (cb.name === 'none') noneChecked = cb.checked;
+              else if (cb.checked) othersChecked = true;
+            });
+            if (noneChecked && othersChecked) {
+              event.preventDefault();
+              alert('Please select either "None" or other isolation options, not both.');
+              return;
+            }
+
             if (!form.checkValidity()) {
               event.preventDefault()
               event.stopPropagation()
@@ -121,6 +173,45 @@
           }, false)
         })
     })()
+
+    // Isolation checkbox toggle logic
+    const covidCB = document.getElementById('covid');
+    const tbCB = document.getElementById('tuberculosis');
+    const ebolaCB = document.getElementById('ebola');
+    const noneCB = document.getElementById('none');
+    const medicalGroup = document.getElementById('medicalConditionsGroup');
+    const isolationCheckboxes = [covidCB, tbCB, ebolaCB];
+
+    function updateMedicalConditionsVisibility() {
+      const anyIsolationChecked = isolationCheckboxes.some(cb => cb.checked);
+      if (anyIsolationChecked) {
+        medicalGroup.style.display = 'none';
+        noneCB.checked = false;
+      } else {
+        medicalGroup.style.display = 'block';
+        if (![covidCB.checked, tbCB.checked, ebolaCB.checked].some(Boolean)) {
+          noneCB.checked = true;
+        }
+      }
+    }
+
+    noneCB.addEventListener('change', () => {
+      if (noneCB.checked) {
+        isolationCheckboxes.forEach(cb => cb.checked = false);
+        medicalGroup.style.display = 'block';
+      }
+    });
+
+    isolationCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          noneCB.checked = false;
+        }
+        updateMedicalConditionsVisibility();
+      });
+    });
+
+    updateMedicalConditionsVisibility();
   </script>
 </body>
 </html>
