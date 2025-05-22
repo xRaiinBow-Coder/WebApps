@@ -2,12 +2,12 @@ const express = require("express");
 const router = express.Router();
 const Room = require("../models/Room");
 
-// Show form to create a new room
+
 router.get("/room/new", (req, res) => {
-  res.render("new_room"); // views/new_room.ejs
+  res.render("new_room"); 
 });
 
-// Create a new room
+
 router.post("/room", async (req, res) => {
   try {
     const { number, type, capacity } = req.body;
@@ -35,7 +35,7 @@ router.post("/room", async (req, res) => {
   }
 });
 
-// List all rooms
+
 router.get("/rooms", async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
@@ -46,7 +46,7 @@ router.get("/rooms", async (req, res) => {
   }
 });
 
-// Assign a patient to a room
+
 router.post("/assign-room/:patientId", async (req, res) => {
   try {
     const { roomId } = req.body;
@@ -63,7 +63,7 @@ router.post("/assign-room/:patientId", async (req, res) => {
       return res.status(400).send("Room is full");
     }
 
-    // Remove patient from all rooms
+    
     await Room.updateMany(
       { occupants: patientId },
       { $pull: { occupants: patientId } }
