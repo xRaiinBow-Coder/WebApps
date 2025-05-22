@@ -273,6 +273,8 @@ app.delete("/patient/:id", async (req, res) => {
   }
 });
 
+
+
 app.get("/rooms", async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
@@ -313,6 +315,17 @@ app.post("/room", async (req, res) => {
       return res.status(400).send("Room number must be unique.");
     }
     res.status(500).send("Error creating room");
+  }
+});
+
+app.delete("/room/:id", async (req, res) => {
+  try {
+    const roomId = req.params.id;
+    await Room.findByIdAndDelete(roomId);
+    res.redirect("/rooms");
+  } catch (error) {
+    console.error("Error deleting room:", error);
+    res.status(500).send("Error deleting room");
   }
 });
 

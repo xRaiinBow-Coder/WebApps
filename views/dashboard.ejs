@@ -7,16 +7,65 @@
     rel="stylesheet"
   >
   <style>
-    /* Highlight isolation rooms in red */
-    .isolation-room {
-      background-color: #f8d7da !important; /* light red background */
-      color: #842029 !important; /* dark red text */
+    /* Forest green theme colors */
+    :root {
+      --forest-green-dark: #1B3A2D;
+      --forest-green: #2F4F4F;
+      --forest-green-light: #4A7367;
+      --forest-green-lighter: #A3B7B1;
+      --red-isolation-bg: #f8d7da;  /* light red background */
+      --red-isolation-text: #842029; /* dark red text */
     }
-    /* Smaller text for patient names */
+
+    body {
+      background-color: var(--forest-green-lighter);
+      color: var(--forest-green-dark);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    h1 {
+      color: var(--forest-green-dark);
+      font-weight: 700;
+    }
+
+    /* Isolation rooms highlight */
+    .isolation-room {
+      background-color: var(--red-isolation-bg) !important;
+      color: var(--red-isolation-text) !important;
+      font-weight: 600;
+    }
+
+    /* Patient names styling */
     .patient-names {
       font-size: 0.85rem;
-      color: #6c757d; /* bootstrap secondary text */
+      color: var(--forest-green-light);
       margin-top: 0.25rem;
+      font-style: italic;
+    }
+
+    /* Table header dark forest green */
+    thead.table-dark {
+      background-color: var(--forest-green);
+      color: white;
+    }
+
+    /* Table striped rows alternate lighter green */
+    tbody tr:nth-child(odd) {
+      background-color: #e1ebe9;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #cbd9d6;
+    }
+
+    /* Links color adjustment if needed */
+    a {
+      color: var(--forest-green-dark);
+      text-decoration: none;
+    }
+    a:hover {
+      color: var(--forest-green-light);
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -26,7 +75,7 @@
   <div class="container mt-5">
     <h1 class="mb-4 text-center">Hospital Room Dashboard</h1>
     
-    <table class="table table-striped table-bordered">
+    <table class="table table-bordered">
       <thead class="table-dark">
         <tr>
           <th>Room Number</th>
