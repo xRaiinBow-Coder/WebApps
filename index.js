@@ -162,6 +162,16 @@ app.post("/patient", async (req, res) => {
   }
 });
 
+app.get("/dashboard", async (req, res) => {
+  try {
+    const rooms = await Room.find().populate("occupants");
+    res.render("dashboard", { rooms });
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    res.status(500).send("Error loading dashboard");
+  }
+});
+
 
 
 app.get("/patient/:id", async (req, res) => {
@@ -276,6 +286,8 @@ app.get("/rooms", async (req, res) => {
 app.get("/room/new", (req, res) => {
   res.render("new_room");
 });
+
+
 
 app.post("/room", async (req, res) => {
   try {

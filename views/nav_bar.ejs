@@ -1,0 +1,22 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/dashboard">🏥 Hospital Dashboard</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link <% if (active === 'dashboard') { %>active<% } %>" href="/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <% if (active === 'patients') { %>active<% } %>" href="/patients">Patients</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <% if (active === 'rooms') { %>active<% } %>" href="/rooms">Rooms</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
