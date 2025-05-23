@@ -133,12 +133,14 @@
     </div>
   </div>
 
+  <% if (session.role === 'admin') { %>
   <div class="buttonsE">
     <a href="/patient/<%= patient._id %>/edit" class="btn btn-primary me-2">Edit</a>
     <form action="/patient/<%= patient._id %>?_method=DELETE" method="POST" class="d-inline">
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   </div>
+  
 
   <hr />
 
@@ -158,6 +160,7 @@
     </select>
     <button type="submit" class="btn btn-primary mt-2 w-100">Assign Room</button>
   </form>
+  <% } %>
 
   <a href="/patients" class="btn btn-secondary mt-4">Back to List</a>
 </div>
