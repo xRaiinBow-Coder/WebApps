@@ -426,6 +426,6 @@ app.delete("/room/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-app.listen(10049, "0.0.0.0", () => {
-  console.log("Server running on port 10049");
+app.listen(3000, "0.0.0.0", () => {
+  console.log("Server running on port 3000");
 });
