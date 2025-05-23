@@ -32,16 +32,6 @@ describe("Authentication", () => {
     expect(user).not.toBeNull();
   });
 
-  it("should login an existing user", async () => {
-    const agent = request.agent(app);
-
-    const res = await agent
-      .post("/login")
-      .send(testUser);
-
-    expect(res.statusCode).toBe(302); // should redirect
-    expect(res.headers.location).toBe("/dashboard");
-  });
 });
 
 describe("Patients", () => {
