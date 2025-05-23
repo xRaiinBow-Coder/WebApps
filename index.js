@@ -20,6 +20,8 @@ app.use(express.json());
 app.use(methodOverride("_method"));
 app.set("view engine", "ejs");
 
+// ==== SCHEMAS ====
+
 const PatientSchema = new mongoose.Schema({
   name: { type: String, required: true },
   age: { type: Number, required: true },
@@ -37,7 +39,7 @@ const Patient = mongoose.model("Patient", PatientSchema);
 
 const RoomSchema = new mongoose.Schema({
   number: { type: String, required: true },
-  type: { type: String, required: true }, 
+  type: { type: String, required: true },
   capacity: { type: Number, required: true },
   occupants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Patient' }],
 });
@@ -46,8 +48,26 @@ const Room = mongoose.model("Room", RoomSchema);
 const AccountSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'user'], default: 'user' }
 });
 const Account = mongoose.model("Account", AccountSchema);
+
+// ==== DEFAULT ADMIN CREATION ====
+(async () => {
+  const adminExists = await Account.findOne({ username: 'admin' });
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const adminAccount = new Account({
+      username: 'admin',
+      password: hashedPassword,
+      role: 'admin'
+    });
+    await adminAccount.save();
+    console.log("Default admin created: admin / admin123");
+  }
+})();
+
+// ==== SESSION ====
 
 app.use(session({
   secret: 'myKey1999', 
@@ -55,45 +75,37 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: "mongodb://20.0.153.128:10999/KieranDB",
-    ttl: 24 * 60 * 60, 
+    ttl: 24 * 60 * 60,
   })
 }));
 
+// ==== MIDDLEWARE ====
+
 function isAuthenticated(req, res, next) {
-  if (req.session.userId) {
-    return next();
-  }
+  if (req.session.userId) return next();
   res.redirect("/login");
 }
 
+function isAdmin(req, res, next) {
+  if (req.session.role === 'admin') return next();
+  return res.status(403).send("Access denied: Admins only");
+}
+
+// ==== AUTH ROUTES ====
+
 app.get("/", (req, res) => res.redirect("/login"));
 
-app.get("/register", (req, res) => {
-  res.render("register");
-});
+app.get("/register", (req, res) => res.render("register"));
 
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).send("Username and password are required.");
-    }
-
+    if (!username || !password) return res.status(400).send("Username and password are required.");
     const existingUser = await Account.findOne({ username });
-    if (existingUser) {
-      return res.status(409).send("Username already taken.");
-    }
-
+    if (existingUser) return res.status(409).send("Username already taken.");
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newAccount = new Account({
-      username,
-      password: hashedPassword,
-    });
-
+    const newAccount = new Account({ username, password: hashedPassword });
     await newAccount.save();
-
     res.redirect("/login");
   } catch (err) {
     console.error("Registration error:", err);
@@ -101,25 +113,17 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.get("/login", (req, res) => {
-  res.render("login", { error: null });
-});
+app.get("/login", (req, res) => res.render("login", { error: null }));
 
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const user = await Account.findOne({ username });
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.render("login", { error: "Invalid username or password" });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.render("login", { error: "Invalid username or password" });
-    }
-
     req.session.userId = user._id;
+    req.session.role = user.role;
     res.redirect("/dashboard");
   } catch (error) {
     console.error("Login error:", error);
@@ -137,27 +141,31 @@ app.post("/logout", (req, res) => {
   });
 });
 
+// ==== DASHBOARD ====
+
 app.get("/dashboard", isAuthenticated, async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
-    res.render("dashboard", { rooms });
+    res.render("dashboard", { rooms, session: req.session });
   } catch (error) {
     console.error("Dashboard Error:", error);
     res.status(500).send("Error loading dashboard");
   }
 });
 
+// ==== PATIENT ROUTES ====
+
 app.get("/patients", isAuthenticated, async (req, res) => {
   try {
     const patients = await Patient.find();
-    res.render("patients", { patients });
+    res.render("patients", { patients, session: req.session });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching patients");
   }
 });
 
-app.get("/patient/new", isAuthenticated, async (req, res) => {
+app.get("/patient/new", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
     res.render("new_patient", { rooms });
@@ -167,22 +175,15 @@ app.get("/patient/new", isAuthenticated, async (req, res) => {
   }
 });
 
-app.post("/patient", isAuthenticated, async (req, res) => {
+app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const medicalConditions = req.body.medicalConditions
-      ? req.body.medicalConditions.split(',').map(c => c.trim())
-      : [];
-
-    const allergies = req.body.allergies
-      ? req.body.allergies.split(',').map(a => a.trim())
-      : [];
-
+    const medicalConditions = req.body.medicalConditions?.split(',').map(c => c.trim()) || [];
+    const allergies = req.body.allergies?.split(',').map(a => a.trim()) || [];
     const isolation = {
       covid: req.body.covid === 'on',
       tuberculosis: req.body.tuberculosis === 'on',
       ebola: req.body.ebola === 'on',
     };
-
     const requiresIsolation = isolation.covid || isolation.tuberculosis || isolation.ebola;
 
     const newPatient = new Patient({
@@ -193,7 +194,6 @@ app.post("/patient", isAuthenticated, async (req, res) => {
       medicalConditions,
       isolation,
     });
-
     await newPatient.save();
 
     let assignedRoom = null;
@@ -201,48 +201,34 @@ app.post("/patient", isAuthenticated, async (req, res) => {
     if (requiresIsolation) {
       if (req.body.roomId && req.body.roomId !== "waiting-room" && req.body.roomId !== "none") {
         const selectedRoom = await Room.findById(req.body.roomId).populate("occupants");
-        if (
-          selectedRoom &&
-          selectedRoom.type === 'isolation' &&
-          selectedRoom.occupants.length < selectedRoom.capacity
-        ) {
+        if (selectedRoom && selectedRoom.type === 'isolation' && selectedRoom.occupants.length < selectedRoom.capacity) {
           assignedRoom = selectedRoom;
         }
       }
       if (!assignedRoom) {
-        assignedRoom = await Room.findOne({ number: "Quarantine", type: "isolation" });
-        if (!assignedRoom) {
-          assignedRoom = new Room({
-            number: "Quarantine",
-            type: "isolation",
-            capacity: 1000,
-            occupants: [],
-          });
-          await assignedRoom.save();
-        }
+        assignedRoom = await Room.findOne({ number: "Quarantine", type: "isolation" }) || new Room({
+          number: "Quarantine",
+          type: "isolation",
+          capacity: 1000,
+          occupants: [],
+        });
+        await assignedRoom.save();
       }
     } else {
       if (req.body.roomId && req.body.roomId !== "waiting-room" && req.body.roomId !== "none") {
         const selectedRoom = await Room.findById(req.body.roomId).populate("occupants");
-        if (
-          selectedRoom &&
-          selectedRoom.type !== 'isolation' &&
-          selectedRoom.occupants.length < selectedRoom.capacity
-        ) {
+        if (selectedRoom && selectedRoom.type !== 'isolation' && selectedRoom.occupants.length < selectedRoom.capacity) {
           assignedRoom = selectedRoom;
         }
       }
       if (!assignedRoom) {
-        assignedRoom = await Room.findOne({ number: "Waiting Room", type: "waiting" });
-        if (!assignedRoom) {
-          assignedRoom = new Room({
-            number: "Waiting Room",
-            type: "waiting",
-            capacity: 1000,
-            occupants: [],
-          });
-          await assignedRoom.save();
-        }
+        assignedRoom = await Room.findOne({ number: "Waiting Room", type: "waiting" }) || new Room({
+          number: "Waiting Room",
+          type: "waiting",
+          capacity: 1000,
+          occupants: [],
+        });
+        await assignedRoom.save();
       }
     }
 
@@ -260,37 +246,25 @@ app.get("/patient/:id", isAuthenticated, async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
-
     const room = await Room.findOne({ occupants: patient._id });
     const rooms = await Room.find().populate("occupants");
-
-    res.render("patient", { patient, room, rooms });
+    res.render("patient", { patient, room, rooms, session: req.session });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching patient");
   }
 });
 
-app.post("/patient/:id/assign-room", isAuthenticated, async (req, res) => {
+app.post("/patient/:id/assign-room", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const patientId = req.params.id;
     const newRoomId = req.body.roomId;
+    if (!newRoomId) return res.status(400).send("Room ID is required");
 
-    if (!newRoomId) {
-      return res.status(400).send("Room ID is required");
-    }
-
-    await Room.updateMany(
-      { occupants: patientId },
-      { $pull: { occupants: patientId } }
-    );
-
+    await Room.updateMany({ occupants: patientId }, { $pull: { occupants: patientId } });
     const newRoom = await Room.findById(newRoomId).populate("occupants");
     if (!newRoom) return res.status(404).send("Room not found");
-
-    if (newRoom.occupants.length >= newRoom.capacity) {
-      return res.status(400).send("Room is full");
-    }
+    if (newRoom.occupants.length >= newRoom.capacity) return res.status(400).send("Room is full");
 
     newRoom.occupants.push(patientId);
     await newRoom.save();
@@ -302,7 +276,7 @@ app.post("/patient/:id/assign-room", isAuthenticated, async (req, res) => {
   }
 });
 
-app.get("/patient/:id/edit", isAuthenticated, async (req, res) => {
+app.get("/patient/:id/edit", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
@@ -313,24 +287,22 @@ app.get("/patient/:id/edit", isAuthenticated, async (req, res) => {
   }
 });
 
-app.put("/patient/:id", isAuthenticated, async (req, res) => {
+app.put("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const updatedData = {
       name: req.body.name,
       age: req.body.age,
       gender: req.body.gender,
-      allergies: req.body.allergies ? req.body.allergies.split(',').map(a => a.trim()) : [],
-      medicalConditions: req.body.medicalConditions ? req.body.medicalConditions.split(',').map(c => c.trim()) : [],
+      allergies: req.body.allergies?.split(',').map(a => a.trim()) || [],
+      medicalConditions: req.body.medicalConditions?.split(',').map(c => c.trim()) || [],
       isolation: {
         covid: req.body.covid === 'on',
         tuberculosis: req.body.tuberculosis === 'on',
         ebola: req.body.ebola === 'on',
       }
     };
-
     const patient = await Patient.findByIdAndUpdate(req.params.id, updatedData, { new: true });
     if (!patient) return res.status(404).send("Patient Not Found");
-
     res.redirect("/patients");
   } catch (error) {
     console.error(error);
@@ -338,16 +310,11 @@ app.put("/patient/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-app.delete("/patient/:id", isAuthenticated, async (req, res) => {
+app.delete("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const patient = await Patient.findByIdAndDelete(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
-
-    await Room.updateMany(
-      { occupants: patient._id },
-      { $pull: { occupants: patient._id } }
-    );
-
+    await Room.updateMany({ occupants: patient._id }, { $pull: { occupants: patient._id } });
     res.redirect("/patients");
   } catch (error) {
     console.error(error);
@@ -355,31 +322,28 @@ app.delete("/patient/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+// ==== ROOM ROUTES ====
+
 app.get("/rooms", isAuthenticated, async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
-    res.render("rooms", { rooms });
+    res.render("rooms", { rooms, session: req.session });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching rooms");
   }
 });
 
-app.get("/room/new", isAuthenticated, (req, res) => {
+app.get("/room/new", isAuthenticated, isAdmin, (req, res) => {
   res.render("new_room");
 });
 
-app.post("/room", isAuthenticated, async (req, res) => {
+app.post("/room", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const { number, type, capacity } = req.body;
-
-    if (!number || !type || !capacity) {
-      return res.status(400).send("Number, type, and capacity are required");
-    }
-
+    if (!number || !type || !capacity) return res.status(400).send("All fields required");
     const newRoom = new Room({ number, type, capacity, occupants: [] });
     await newRoom.save();
-
     res.redirect("/rooms");
   } catch (error) {
     console.error(error);
@@ -387,7 +351,7 @@ app.post("/room", isAuthenticated, async (req, res) => {
   }
 });
 
-app.get("/room/:id/edit", isAuthenticated, async (req, res) => {
+app.get("/room/:id/edit", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
     if (!room) return res.status(404).send("Room Not Found");
@@ -398,17 +362,15 @@ app.get("/room/:id/edit", isAuthenticated, async (req, res) => {
   }
 });
 
-app.put("/room/:id", isAuthenticated, async (req, res) => {
+app.put("/room/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const updatedData = {
       number: req.body.number,
       type: req.body.type,
       capacity: req.body.capacity,
     };
-
     const room = await Room.findByIdAndUpdate(req.params.id, updatedData, { new: true });
     if (!room) return res.status(404).send("Room Not Found");
-
     res.redirect("/rooms");
   } catch (error) {
     console.error(error);
@@ -416,7 +378,7 @@ app.put("/room/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-app.delete("/room/:id", isAuthenticated, async (req, res) => {
+app.delete("/room/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
     await Room.findByIdAndDelete(req.params.id);
     res.redirect("/rooms");
@@ -429,4 +391,3 @@ app.delete("/room/:id", isAuthenticated, async (req, res) => {
 app.listen(3000, "0.0.0.0", () => {
   console.log("Server running on port 3000");
 });
-//t
