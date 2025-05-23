@@ -66,7 +66,9 @@
     <h1 class="List">All Patients</h1>
     
     <div class="ButtonsNav">
-        <a href="/patient/new" class="btn btn-primary me-2">Add a New Patient</a>
+        <% if (session.role === 'admin') { %>
+            <a href="/patient/new" class="btn btn-primary me-2">Add a New Patient</a>
+        <% } %>
         <a href="/rooms" class="btn btn-outline-primary">View Rooms</a>
     </div>
 
