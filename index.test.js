@@ -1,7 +1,6 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("./index"); // adjust if your app is exported elsewhere
-const Account = require("./models/account"); // assuming your models are in separate files
 
 const testUser = {
   username: "testuser",
