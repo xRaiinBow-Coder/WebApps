@@ -20,7 +20,6 @@ app.use(express.json());
 app.use(methodOverride("_method"));
 app.set("view engine", "ejs");
 
-// ==== SCHEMAS ====
 
 const PatientSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -52,22 +51,21 @@ const AccountSchema = new mongoose.Schema({
 });
 const Account = mongoose.model("Account", AccountSchema);
 
-// ==== DEFAULT ADMIN CREATION ====
+
 (async () => {
   const adminExists = await Account.findOne({ username: 'admin' });
   if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('a123', 10);
+    const hashedPassword = await bcrypt.hash('password123', 10);
     const adminAccount = new Account({
       username: 'admin',
       password: hashedPassword,
       role: 'admin'
     });
     await adminAccount.save();
-    console.log("Default admin created: admin / password123");
+    
   }
 })();
 
-// ==== SESSION ====
 
 app.use(session({
   secret: 'myKey1999', 
@@ -79,7 +77,6 @@ app.use(session({
   })
 }));
 
-// ==== MIDDLEWARE ====
 
 function isAuthenticated(req, res, next) {
   if (req.session.userId) return next();
@@ -91,7 +88,6 @@ function isAdmin(req, res, next) {
   return res.status(403).send("Access denied: Admins only");
 }
 
-// ==== AUTH ROUTES ====
 
 app.get("/", (req, res) => res.redirect("/login"));
 
@@ -141,7 +137,6 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// ==== DASHBOARD ====
 
 app.get("/dashboard", isAuthenticated, async (req, res) => {
   try {
@@ -153,7 +148,6 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
   }
 });
 
-// ==== PATIENT ROUTES ====
 
 app.get("/patients", isAuthenticated, async (req, res) => {
   try {
@@ -322,7 +316,6 @@ app.delete("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
-// ==== ROOM ROUTES ====
 
 app.get("/rooms", isAuthenticated, async (req, res) => {
   try {
