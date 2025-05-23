@@ -56,7 +56,7 @@ const Account = mongoose.model("Account", AccountSchema);
 (async () => {
   const adminExists = await Account.findOne({ username: 'admin' });
   if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('a123', 10);
     const adminAccount = new Account({
       username: 'admin',
       password: hashedPassword,
@@ -88,8 +88,9 @@ function isAuthenticated(req, res, next) {
 
 function isAdmin(req, res, next) {
   if (req.session.role === 'admin') return next();
-  return res.status(403).send("Access denied: Admins only");
+  return res.status(403).json({ error: "Access denied: Admins only" });
 }
+
 
 // ==== AUTH ROUTES ====
 
