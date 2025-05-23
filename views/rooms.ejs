@@ -79,9 +79,7 @@
   <h1 class="RoomList">Room List</h1>
 
   <div class="ButtonsNav">
-    <% if (user && user.role === 'admin') { %>
-      <a href="/room/new" class="btn btn-primary me-2">+ Add New Room</a>
-    <% } %>
+    <a href="/room/new" class="btn btn-primary me-2">+ Add New Room</a>
     <a href="/patients" class="btn btn-outline-primary">Back to patients</a>
   </div>
 
@@ -108,13 +106,9 @@
         <p><em>No occupants</em></p>
       <% } %>
 
-      <% if (user && user.role === 'admin') { %>
-        <a href="/room/<%= room._id %>/edit" class="btn btn-outline-primary btn-sm mt-2">Edit</a>
-
-        <form class="delete-form" action="/room/<%= room._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Are you sure you want to delete this room?');">
-          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
-      <% } %>
+      <form class="delete-form" action="/room/<%= room._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Are you sure you want to delete this room?');">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
     </div>
   <% }) %>
 </div>

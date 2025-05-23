@@ -54,114 +54,130 @@
       margin-bottom: 1rem;
       padding: 25px;
     }
-    .age, .NewPatient, .Gender, .Allergies, .Medical, .IsolationConditions, .RoomAssign {
+    .age {
       padding: 10px;
       margin-bottom: 1rem;
       justify-content: center;
     }
-    .access-denied {
-      text-align: center;
-      margin-top: 100px;
-      color: #d9534f;
-      font-weight: bold;
-      font-size: 1.3rem;
+    .NewPatient {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .Gender {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .Allergies {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .Medical {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .IsolationConditions {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .RoomAssign {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <% if (user && user.isAdmin) { %>
-      <h1 class="NewPatient">Add New Patient</h1>
-      <form action="/patient" method="POST" class="needs-validation" novalidate>
-        <div class="NewPatient">
-          <label for="name" class="form-label">Full Name</label>
-          <input type="text" class="form-control" id="name" name="name" placeholder="Enter full name" required>
-          <div class="invalid-feedback">Please enter a name.</div>
-        </div>
-
-        <div class="age">
-          <label for="age" class="form-label">Age</label>
-          <input type="number" class="form-control" id="age" name="age" placeholder="Enter age" required>
-          <div class="invalid-feedback">Please enter a valid age.</div>
-        </div>
-
-        <div class="Gender">
-          <label for="gender" class="form-label">Gender</label>
-          <select class="form-select" id="gender" name="gender" required>
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-          <div class="invalid-feedback">Please select a gender.</div>
-        </div>
-
-        <div class="Allergies">
-          <label for="allergies" class="form-label">Allergies (comma-separated)</label>
-          <input type="text" class="form-control" id="allergies" name="allergies" placeholder="e.g. peanuts, pollen">
-          <div class="form-text">Leave blank if none.</div>
-        </div>
-
-        <div class="Medical" id="medicalConditionsGroup">
-          <label for="medicalConditions" class="form-label">Medical Conditions (comma-separated)</label>
-          <input type="text" class="form-control" id="medicalConditions" name="medicalConditions" placeholder="e.g. diabetes, hypertension">
-          <div class="form-text">Leave blank if none.</div>
-        </div>
-
-        <div class="IsolationConditions">
-          <label class="form-label">Isolation Status</label>
-          <div class="form-check">
-            <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid">
-            <label class="form-check-label" for="covid">COVID-19</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis">
-            <label class="form-check-label" for="tuberculosis">Tuberculosis</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola">
-            <label class="form-check-label" for="ebola">Ebola</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="none" id="none" checked>
-            <label class="form-check-label" for="none">None</label>
-          </div>
-          <div class="form-text">Select all that apply. Select "None" if no isolation required.</div>
-        </div>
-
-        <div class="RoomAssign">
-          <label for="roomId" class="form-label">Assign Room</label>
-          <select class="form-select" id="roomId" name="roomId" >
-            <option value="">Select room</option>
-            <% let hasAvailableRoom = false; %>
-            <% rooms.forEach(room => { 
-                 const availableSpots = room.capacity - room.occupants.length;
-                 if (availableSpots > 0) { 
-                   hasAvailableRoom = true;
-            %>
-              <option value="<%= room._id %>">
-                Room <%= room.number %> — <%= availableSpots %> spot(s)
-                <% if (room.type === 'isolation') { %>
-                  [Isolation]
-                <% } %>
-              </option>
-            <% } }); %>
-            <% if (!hasAvailableRoom) { %>
-              <option value="waiting-room" selected>Waiting Room (No rooms available)</option>
-            <% } %>
-          </select>
-          <div class="invalid-feedback">Please select a room with available capacity.</div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Add Patient</button>
-        <a href="/patients" class="btn btn-secondary ms-2">Back to List</a>
-      </form>
-    <% } else { %>
-      <div class="access-denied">
-        Access Denied.<br />
-        You do not have permission to view this page.
+    <h1 class="NewPatient">Add New Patient</h1>
+    <form action="/patient" method="POST" class="needs-validation" novalidate>
+      <div class="NewPatient">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="name" name="name" placeholder="Enter full name" required>
+        <div class="invalid-feedback">Please enter a name.</div>
       </div>
-    <% } %>
+
+      <div class="age">
+        <label for="age" class="form-label">Age</label>
+        <input type="number" class="form-control" id="age" name="age" placeholder="Enter age" required>
+        <div class="invalid-feedback">Please enter a valid age.</div>
+      </div>
+
+      <div class="Gender">
+        <label for="gender" class="form-label">Gender</label>
+        <select class="form-select" id="gender" name="gender" required>
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+        <div class="invalid-feedback">Please select a gender.</div>
+      </div>
+
+      <div class="Allergies">
+        <label for="allergies" class="form-label">Allergies (comma-separated)</label>
+        <input type="text" class="form-control" id="allergies" name="allergies" placeholder="e.g. peanuts, pollen">
+        <div class="form-text">Leave blank if none.</div>
+      </div>
+
+      <div class="Medical" id="medicalConditionsGroup">
+        <label for="medicalConditions" class="form-label">Medical Conditions (comma-separated)</label>
+        <input type="text" class="form-control" id="medicalConditions" name="medicalConditions" placeholder="e.g. diabetes, hypertension">
+        <div class="form-text">Leave blank if none.</div>
+      </div>
+
+      <div class="IsolationConditions">
+        <label class="form-label">Isolation Status</label>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid">
+          <label class="form-check-label" for="covid">COVID-19</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis">
+          <label class="form-check-label" for="tuberculosis">Tuberculosis</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola">
+          <label class="form-check-label" for="ebola">Ebola</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="none" id="none" checked>
+          <label class="form-check-label" for="none">None</label>
+        </div>
+        <div class="form-text">Select all that apply. Select "None" if no isolation required.</div>
+      </div>
+
+      <div class="RoomAssign">
+        <label for="roomId" class="form-label">Assign Room</label>
+        <select class="form-select" id="roomId" name="roomId" >
+          <option value="">Select room</option>
+          <% let hasAvailableRoom = false; %>
+          <% rooms.forEach(room => { 
+               const availableSpots = room.capacity - room.occupants.length;
+               if (availableSpots > 0) { 
+                 hasAvailableRoom = true;
+          %>
+            <option value="<%= room._id %>">
+              Room <%= room.number %> — <%= availableSpots %> spot(s)
+              <% if (room.type === 'isolation') { %>
+                [Isolation]
+              <% } %>
+            </option>
+          <% } }); %>
+          <% if (!hasAvailableRoom) { %>
+            <option value="waiting-room" selected>Waiting Room (No rooms available)</option>
+          <% } %>
+        </select>
+        <div class="invalid-feedback">Please select a room with available capacity.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Add Patient</button>
+      <a href="/patients" class="btn btn-secondary ms-2">Back to List</a>
+    </form>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
