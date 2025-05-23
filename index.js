@@ -63,7 +63,7 @@ const Account = mongoose.model("Account", AccountSchema);
       role: 'admin'
     });
     await adminAccount.save();
-    console.log("Default admin created: admin / admin123");
+    console.log("Default admin created: admin / password123");
   }
 })();
 
