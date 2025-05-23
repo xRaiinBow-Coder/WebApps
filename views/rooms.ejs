@@ -79,7 +79,9 @@
   <h1 class="RoomList">Room List</h1>
 
   <div class="ButtonsNav">
+    <% if (session.role === 'admin') { %>
     <a href="/room/new" class="btn btn-primary me-2">+ Add New Room</a>
+    <% } %>
     <a href="/patients" class="btn btn-outline-primary">Back to patients</a>
   </div>
 
