@@ -46,37 +46,51 @@
       text-decoration: underline;
       color: var(--forest-green-dark);
     }
+    .access-denied {
+      text-align: center;
+      margin-top: 100px;
+      color: #d9534f;
+      font-weight: bold;
+      font-size: 1.3rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="form-container mx-auto">
-      <h1 class="mb-4">Create a New Room</h1>
+    <% if (user && user.isAdmin) { %>
+      <div class="form-container mx-auto">
+        <h1 class="mb-4">Create a New Room</h1>
 
-      <form action="/room" method="POST" novalidate>
-        <div class="mb-3">
-          <label for="number" class="form-label">Room Number:</label>
-          <input type="text" id="number" name="number" class="form-control" required placeholder="Enter room number" />
-        </div>
+        <form action="/room" method="POST" novalidate>
+          <div class="mb-3">
+            <label for="number" class="form-label">Room Number:</label>
+            <input type="text" id="number" name="number" class="form-control" required placeholder="Enter room number" />
+          </div>
 
-        <div class="mb-3">
-          <label for="type" class="form-label">Room Type:</label>
-          <select id="type" name="type" class="form-select" required>
-            <option value="general">General Ward</option>
-            <option value="isolation">Isolation</option>
-          </select>
-        </div>
+          <div class="mb-3">
+            <label for="type" class="form-label">Room Type:</label>
+            <select id="type" name="type" class="form-select" required>
+              <option value="general">General Ward</option>
+              <option value="isolation">Isolation</option>
+            </select>
+          </div>
 
-        <div class="mb-3">
-          <label for="capacity" class="form-label">Capacity:</label>
-          <input type="number" id="capacity" name="capacity" class="form-control" min="1" required placeholder="Enter capacity" />
-        </div>
+          <div class="mb-3">
+            <label for="capacity" class="form-label">Capacity:</label>
+            <input type="number" id="capacity" name="capacity" class="form-control" min="1" required placeholder="Enter capacity" />
+          </div>
 
-        <button type="submit" class="btn btn-primary w-100">Create Room</button>
-      </form>
+          <button type="submit" class="btn btn-primary w-100">Create Room</button>
+        </form>
 
-      <a href="/rooms" class="btn-link">← Back to Room List</a>
-    </div>
+        <a href="/rooms" class="btn-link">← Back to Room List</a>
+      </div>
+    <% } else { %>
+      <div class="access-denied">
+        Access Denied.<br />
+        You do not have permission to view this page.
+      </div>
+    <% } %>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
