@@ -122,7 +122,7 @@ app.post("/login", async (req, res) => {
       return res.render("login", { error: "Invalid username or password" });
     }
     req.session.userId = user._id;
-    req.session.username = user.username;  // <-- add this line
+    req.session.username = user.username;  
     req.session.role = user.role;
     res.redirect("/dashboard");
   } catch (error) {
@@ -149,7 +149,7 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
     res.render("dashboard", {
       rooms,
       session: req.session,
-      active: 'dashboard' // if you want to set active nav item
+      active: 'dashboard' 
     });
   } catch (error) {
     console.error("Dashboard Error:", error);
