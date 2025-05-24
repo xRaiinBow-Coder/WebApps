@@ -6,38 +6,29 @@ const Room = mongoose.model("Room");
 const Account = mongoose.model("Account");
 
 let agent;
-let adminCookie;
 
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
+  await Account.deleteMany({}); // Clear test accounts or all if safe
 
-  await Account.deleteMany({ test: true });
+  agent = request.agent(app); // Use agent for session persistence
 
-  agent = request.agent(app);
-
-  const loginRes = await agent
+  // Login as admin once, store session in agent automatically
+  await agent
     .post("/login")
     .type("form")
     .send({ username: "admin", password: "password123" })
     .expect(302);
-
-  adminCookie = loginRes.headers["set-cookie"];
-  if (!adminCookie) {
-    throw new Error("Admin login failed: no cookie returned");
-  }
-  // Join cookie array into a string for header
-  adminCookie = adminCookie.join("; ");
-  console.log("Admin Cookie:", adminCookie);
 });
 
 afterEach(async () => {
-  await Patient.deleteMany({ test: true });
-  await Room.deleteMany({ test: true });
+  await Patient.deleteMany({});
+  await Room.deleteMany({});
 });
 
 afterAll(async () => {
-  await mongoose.connection.close(); // Close DB connection
-  await new Promise(resolve => server.close(resolve)); // Close server
+  await mongoose.connection.close();
+  await new Promise((resolve) => server.close(resolve));
 });
 
 describe("Patient System Tests", () => {
@@ -53,12 +44,10 @@ describe("Patient System Tests", () => {
       type: "general",
       capacity: 2,
       occupants: [],
-      test: true,
     });
 
     const res = await agent
       .post("/patient")
-      .set("Cookie", adminCookie)
       .type("form")
       .send({
         name: "Test Patient",
@@ -67,12 +56,13 @@ describe("Patient System Tests", () => {
         allergies: "pollen, nuts",
         medicalConditions: "asthma",
         roomId: room._id.toString(),
-        test: true,
       });
 
     expect(res.status).toBe(302);
+
     const patient = await Patient.findOne({ name: "Test Patient" });
     expect(patient).toBeTruthy();
+
     const updatedRoom = await Room.findById(room._id);
     expect(updatedRoom.occupants.length).toBe(1);
   });
@@ -80,19 +70,16 @@ describe("Patient System Tests", () => {
   it("should assign isolation patient to quarantine", async () => {
     const res = await agent
       .post("/patient")
-      .set("Cookie", adminCookie)
       .type("form")
       .send({
         name: "Isolated Joe",
         age: 40,
         gender: "male",
         covid: "on",
-        allergies: "",
-        medicalConditions: "",
-        test: true,
       });
 
     expect(res.status).toBe(302);
+
     const patient = await Patient.findOne({ name: "Isolated Joe" });
     const room = await Room.findOne({ occupants: patient._id });
     expect(room.type).toBe("isolation");
@@ -103,13 +90,9 @@ describe("Patient System Tests", () => {
       name: "Lookup",
       age: 33,
       gender: "female",
-      test: true,
     });
 
-    const res = await agent
-      .get(`/patient/${patient._id}`)
-      .set("Cookie", adminCookie);
-
+    const res = await agent.get(`/patient/${patient._id}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain("Lookup");
   });
@@ -119,15 +102,14 @@ describe("Patient System Tests", () => {
       name: "Deletable",
       age: 25,
       gender: "male",
-      test: true,
     });
 
     const res = await agent
       .delete(`/patient/${patient._id}?_method=DELETE`)
-      .set("Cookie", adminCookie)
       .type("form");
 
     expect(res.status).toBe(302);
+
     const found = await Patient.findById(patient._id);
     expect(found).toBeNull();
   });
