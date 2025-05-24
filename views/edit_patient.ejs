@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,25 +44,34 @@
     .invalid-feedback {
       color: #dc3545;
     }
+    .container {
+      margin-bottom: 1rem;
+      padding: 25px;
+    }
+    .NewPatient, .age, .Gender, .Allergies, .Medical, .IsolationConditions, .RoomAssign {
+      padding: 10px;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
-  <div class="container mt-5">
-    <h1 class="mb-4">Edit Patient</h1>
+  <div class="container">
+    <h1 class="NewPatient">Edit Patient</h1>
     <form action="/patient/<%= patient._id %>?_method=PUT" method="POST" class="needs-validation" novalidate>
-      <div class="mb-3">
+      <div class="NewPatient">
         <label for="name" class="form-label">Full Name</label>
         <input type="text" class="form-control" id="name" name="name" value="<%= patient.name %>" required>
         <div class="invalid-feedback">Please enter a name.</div>
       </div>
 
-      <div class="mb-3">
+      <div class="age">
         <label for="age" class="form-label">Age</label>
         <input type="number" class="form-control" id="age" name="age" value="<%= patient.age %>" required>
         <div class="invalid-feedback">Please enter a valid age.</div>
       </div>
 
-      <div class="mb-3">
+      <div class="Gender">
         <label for="gender" class="form-label">Gender</label>
         <select class="form-select" id="gender" name="gender" required>
           <option value="">Select gender</option>
@@ -75,16 +82,59 @@
         <div class="invalid-feedback">Please select a gender.</div>
       </div>
 
-      <div class="mb-3">
+      <div class="Allergies">
         <label for="allergies" class="form-label">Allergies (comma-separated)</label>
         <input type="text" class="form-control" id="allergies" name="allergies" value="<%= patient.allergies.join(', ') %>">
         <div class="form-text">Separate multiple allergies with commas.</div>
       </div>
 
-      <div class="mb-3">
+      <div class="Medical" id="medicalConditionsGroup">
         <label for="medicalConditions" class="form-label">Medical Conditions (comma-separated)</label>
         <input type="text" class="form-control" id="medicalConditions" name="medicalConditions" value="<%= patient.medicalConditions.join(', ') %>">
-        <div class="form-text">Separate multiple conditions with commas.</div>
+        <div class="form-text">Leave blank if none.</div>
+      </div>
+
+      <div class="IsolationConditions">
+        <label class="form-label">Isolation Status</label>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid" <%= patient.isolation?.includes('covid') ? 'checked' : '' %>>
+          <label class="form-check-label" for="covid">COVID-19</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis" <%= patient.isolation?.includes('tuberculosis') ? 'checked' : '' %>>
+          <label class="form-check-label" for="tuberculosis">Tuberculosis</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola" <%= patient.isolation?.includes('ebola') ? 'checked' : '' %>>
+          <label class="form-check-label" for="ebola">Ebola</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="none" id="none" <%= !patient.isolation?.length ? 'checked' : '' %>>
+          <label class="form-check-label" for="none">None</label>
+        </div>
+        <div class="form-text">Select all that apply. Select "None" if no isolation required.</div>
+      </div>
+
+      <div class="RoomAssign">
+        <label for="roomId" class="form-label">Assign Room</label>
+        <select class="form-select" id="roomId" name="roomId">
+          <option value="">Select room</option>
+          <% let hasAvailableRoom = false; %>
+          <% rooms.forEach(room => {
+               const availableSpots = room.capacity - room.occupants.length + (room._id.toString() === patient.roomId?.toString() ? 1 : 0);
+               if (availableSpots > 0) {
+                 hasAvailableRoom = true;
+          %>
+            <option value="<%= room._id %>" <%= room._id.toString() === patient.roomId?.toString() ? 'selected' : '' %>>
+              Room <%= room.number %> — <%= availableSpots %> spot(s)
+              <% if (room.type === 'isolation') { %>[Isolation]<% } %>
+            </option>
+          <% } }); %>
+          <% if (!hasAvailableRoom) { %>
+            <option value="waiting-room" selected>Waiting Room (No rooms available)</option>
+          <% } %>
+        </select>
+        <div class="invalid-feedback">Please select a room with available capacity.</div>
       </div>
 
       <button type="submit" class="btn btn-primary">Update</button>
@@ -95,20 +145,61 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     (function () {
-      'use strict'
-      var forms = document.querySelectorAll('.needs-validation')
-      Array.prototype.slice.call(forms)
-        .forEach(function (form) {
-          form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-              event.preventDefault()
-              event.stopPropagation()
-            }
-            form.classList.add('was-validated')
-          }, false)
-        })
-    })()
+      'use strict';
+      var forms = document.querySelectorAll('.needs-validation');
+      Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          const isolationCheckboxes = form.querySelectorAll('input[type="checkbox"][name="covid"], input[type="checkbox"][name="tuberculosis"], input[type="checkbox"][name="ebola"], input[type="checkbox"][name="none"]');
+          let noneChecked = false;
+          let othersChecked = false;
+          isolationCheckboxes.forEach(cb => {
+            if (cb.name === 'none') noneChecked = cb.checked;
+            else if (cb.checked) othersChecked = true;
+          });
+          if (noneChecked && othersChecked) {
+            event.preventDefault();
+            alert('Please select either "None" or other isolation options, not both.');
+            return;
+          }
+
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      });
+    })();
+
+    const covidCB = document.getElementById('covid');
+    const tbCB = document.getElementById('tuberculosis');
+    const ebolaCB = document.getElementById('ebola');
+    const noneCB = document.getElementById('none');
+    const medicalGroup = document.getElementById('medicalConditionsGroup');
+    const isolationCheckboxes = [covidCB, tbCB, ebolaCB];
+
+    function updateMedicalConditionsVisibility() {
+      const anyIsolationChecked = isolationCheckboxes.some(cb => cb.checked);
+      medicalGroup.style.display = anyIsolationChecked ? 'none' : 'block';
+    }
+
+    noneCB.addEventListener('change', () => {
+      if (noneCB.checked) {
+        isolationCheckboxes.forEach(cb => cb.checked = false);
+        updateMedicalConditionsVisibility();
+      }
+    });
+
+    isolationCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          noneCB.checked = false;
+        }
+        updateMedicalConditionsVisibility();
+      });
+    });
+
+    updateMedicalConditionsVisibility();
   </script>
 </body>
 </html>
-
