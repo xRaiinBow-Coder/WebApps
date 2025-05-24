@@ -67,7 +67,7 @@
   <%- include('nav_bar', { active: 'dashboard' }) %>
 
   <div class="container mt-5">
-    <h1 class="mb-4 text-center">Hospital Room Dashboard</h1>
+    <h1 class="mb-4 text-center">Hospital Dashboard</h1>
     
     <table class="table table-bordered">
       <thead class="table-dark">
@@ -105,7 +105,7 @@
     </table>
 
     <div class="mt-4">
-      <h4>Total Patients in Hospital: 
+      <h4>Total Patients: 
         <%= rooms.reduce((total, room) => total + room.occupants.length, 0) %>
       </h4>
     </div>
