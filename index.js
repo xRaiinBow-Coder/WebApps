@@ -287,26 +287,50 @@ app.get("/patient/:id/edit", isAuthenticated, isAdmin, async (req, res) => {
 
 app.put("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const updatedData = {
-      name: req.body.name,
-      age: req.body.age,
-      gender: req.body.gender,
-      allergies: req.body.allergies?.split(',').map(a => a.trim()) || [],
-      medicalConditions: req.body.medicalConditions?.split(',').map(c => c.trim()) || [],
-      isolation: {
-        covid: req.body.covid === 'on',
-        tuberculosis: req.body.tuberculosis === 'on',
-        ebola: req.body.ebola === 'on',
-      }
-    };
-    const patient = await Patient.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+    const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
+
+    // Get updated isolation values as an array
+    const isolation = [];
+    if (req.body.covid) isolation.push("covid");
+    if (req.body.tuberculosis) isolation.push("tuberculosis");
+    if (req.body.ebola) isolation.push("ebola");
+
+    const allergies = req.body.allergies?.split(',').map(a => a.trim()) || [];
+    const medicalConditions = req.body.medicalConditions?.split(',').map(c => c.trim()) || [];
+
+    let assignedRoomId = req.body.roomId;
+
+    // If isolation is required, assign an available isolation room
+    if (isolation.length > 0) {
+      const isolationRoom = await Room.findOne({
+        type: 'isolation',
+        $expr: { $lt: [{ $size: "$occupants" }, "$capacity"] }
+      });
+
+      if (isolationRoom) {
+        assignedRoomId = isolationRoom._id;
+      }
+    }
+
+    // Update patient info
+    patient.name = req.body.name;
+    patient.age = req.body.age;
+    patient.gender = req.body.gender;
+    patient.allergies = allergies;
+    patient.medicalConditions = medicalConditions;
+    patient.isolation = isolation;
+    patient.roomId = assignedRoomId;
+
+    await patient.save();
+
     res.redirect("/patients");
   } catch (error) {
     console.error(error);
     res.status(500).send("Error updating patient");
   }
 });
+
 
 app.delete("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
