@@ -66,16 +66,6 @@ const Account = mongoose.model("Account", AccountSchema);
   }
 })();
 
-(async () => {
-  const admin = await Account.findOne({ username: 'admin' });
-  if (admin) {
-    const newHashedPassword = await bcrypt.hash('password123', 10);
-    admin.password = newHashedPassword;
-    await admin.save();
-    console.log("Admin password updated.");
-  }
-})();
-
 
 app.use(session({
   secret: 'myKey1999', 
