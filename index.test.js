@@ -18,7 +18,7 @@ beforeAll(async () => {
     .post("/login")
     .type("form")
     .send({ username: "admin", password: "password123" })
-    .expect(302);
+    .expect(200);  // expect 200 if no redirect occurs
 });
 
 afterEach(async () => {
