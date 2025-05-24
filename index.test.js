@@ -9,26 +9,29 @@ let agent;
 
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
-  await Account.deleteMany({}); // Clear test accounts or all if safe
+  await Account.deleteMany({}); // clear accounts for clean test environment
 
-  agent = request.agent(app); // Use agent for session persistence
+  agent = request.agent(app);
 
-  // Login as admin once, store session in agent automatically
+  // Login as admin once; expect 200 or 302 based on your app behavior
   await agent
     .post("/login")
     .type("form")
     .send({ username: "admin", password: "password123" })
-    .expect(200);  // expect 200 if no redirect occurs
+    .expect(200); // change to .expect(302) if login redirects
 });
 
 afterEach(async () => {
   await Patient.deleteMany({});
   await Room.deleteMany({});
+  await Account.deleteMany({}); // optional, keep DB clean if needed
 });
 
 afterAll(async () => {
   await mongoose.connection.close();
-  await new Promise((resolve) => server.close(resolve));
+  await new Promise((resolve, reject) => {
+    server.close(err => (err ? reject(err) : resolve()));
+  });
 });
 
 describe("Patient System Tests", () => {
@@ -56,9 +59,8 @@ describe("Patient System Tests", () => {
         allergies: "pollen, nuts",
         medicalConditions: "asthma",
         roomId: room._id.toString(),
-      });
-
-    expect(res.status).toBe(302);
+      })
+      .expect(302);
 
     const patient = await Patient.findOne({ name: "Test Patient" });
     expect(patient).toBeTruthy();
@@ -76,12 +78,14 @@ describe("Patient System Tests", () => {
         age: 40,
         gender: "male",
         covid: "on",
-      });
-
-    expect(res.status).toBe(302);
+      })
+      .expect(302);
 
     const patient = await Patient.findOne({ name: "Isolated Joe" });
+    expect(patient).toBeTruthy();
+
     const room = await Room.findOne({ occupants: patient._id });
+    expect(room).toBeTruthy();
     expect(room.type).toBe("isolation");
   });
 
@@ -92,8 +96,7 @@ describe("Patient System Tests", () => {
       gender: "female",
     });
 
-    const res = await agent.get(`/patient/${patient._id}`);
-    expect(res.status).toBe(200);
+    const res = await agent.get(`/patient/${patient._id}`).expect(200);
     expect(res.text).toContain("Lookup");
   });
 
@@ -106,9 +109,8 @@ describe("Patient System Tests", () => {
 
     const res = await agent
       .delete(`/patient/${patient._id}?_method=DELETE`)
-      .type("form");
-
-    expect(res.status).toBe(302);
+      .type("form")
+      .expect(302);
 
     const found = await Patient.findById(patient._id);
     expect(found).toBeNull();
