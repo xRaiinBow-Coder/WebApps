@@ -5,20 +5,44 @@ const Patient = mongoose.model("Patient");
 const Room = mongoose.model("Room");
 const Account = mongoose.model("Account");
 
+let agent;
+let adminCookie;
+
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
+
+  // Clear test accounts or all if safe
   await Account.deleteMany({ test: true });
+
+  agent = request.agent(app); // create agent to hold cookies
+
+  // Login once and get the cookie
+  const loginRes = await agent
+    .post("/login")
+    .type("form")
+    .send({ username: "admin", password: "password123" })
+    .expect(302); // login route redirects on success
+
+  adminCookie = loginRes.headers["set-cookie"];
+  if (!adminCookie) {
+    throw new Error("Admin login failed: no cookie returned");
+  }
+  adminCookie = adminCookie.join("; "); // join cookies into single string
+
+  console.log("Admin Cookie:", adminCookie);
 });
 
 afterEach(async () => {
+  // Clean up test patients and rooms after each test
   await Patient.deleteMany({ test: true });
   await Room.deleteMany({ test: true });
 });
 
 afterAll(async () => {
+  // Clean up test accounts and close connections
   await Account.deleteMany({ test: true });
   await mongoose.connection.close();
-  server.close();
+  await new Promise((resolve) => server.close(resolve));
 });
 
 describe("Patient System Tests", () => {
@@ -37,8 +61,9 @@ describe("Patient System Tests", () => {
       test: true,
     });
 
-    const res = await request(app)
+    const res = await agent
       .post("/patient")
+      .set("Cookie", adminCookie)
       .type("form")
       .send({
         name: "Test Patient",
@@ -50,10 +75,8 @@ describe("Patient System Tests", () => {
         test: true,
       });
 
-    // Adjust expected status depending if auth is required
-    expect(res.status).toBe(200); // or 302 if it redirects unauthenticated users
+    expect(res.status).toBe(302); // Redirect after successful post
 
-    // Only check DB if the test can create patient without login
     const patient = await Patient.findOne({ name: "Test Patient" });
     expect(patient).toBeTruthy();
 
@@ -62,8 +85,9 @@ describe("Patient System Tests", () => {
   });
 
   it("should assign isolation patient to quarantine", async () => {
-    const res = await request(app)
+    const res = await agent
       .post("/patient")
+      .set("Cookie", adminCookie)
       .type("form")
       .send({
         name: "Isolated Joe",
@@ -75,7 +99,7 @@ describe("Patient System Tests", () => {
         test: true,
       });
 
-    expect(res.status).toBe(200); // or 302 based on your app
+    expect(res.status).toBe(302);
 
     const patient = await Patient.findOne({ name: "Isolated Joe" });
     const room = await Room.findOne({ occupants: patient._id });
@@ -90,7 +114,9 @@ describe("Patient System Tests", () => {
       test: true,
     });
 
-    const res = await request(app).get(`/patient/${patient._id}`);
+    const res = await agent
+      .get(`/patient/${patient._id}`)
+      .set("Cookie", adminCookie);
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("Lookup");
@@ -104,11 +130,12 @@ describe("Patient System Tests", () => {
       test: true,
     });
 
-    const res = await request(app)
+    const res = await agent
       .delete(`/patient/${patient._id}?_method=DELETE`)
+      .set("Cookie", adminCookie)
       .type("form");
 
-    expect(res.status).toBe(200); // or 302 if redirecting unauthenticated users
+    expect(res.status).toBe(302);
 
     const found = await Patient.findById(patient._id);
     expect(found).toBeNull();
