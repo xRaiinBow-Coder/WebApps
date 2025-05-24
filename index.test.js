@@ -11,26 +11,26 @@ let adminCookie;
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
 
-  // Clear test accounts or all if safe
   await Account.deleteMany({ test: true });
 
-  agent = request.agent(app); // create agent to hold cookies
+  agent = request.agent(app);
 
-  // Login once and get the cookie
   const loginRes = await agent
     .post("/login")
     .type("form")
     .send({ username: "admin", password: "password123" })
-    .expect(302); // login route redirects on success
+    .expect(302);
 
-  adminCookie = loginRes.headers["set-cookie"];
-  if (!adminCookie) {
+  const rawCookies = loginRes.headers["set-cookie"];
+  if (!rawCookies) {
     throw new Error("Admin login failed: no cookie returned");
   }
-  adminCookie = adminCookie.join("; "); // join cookies into single string
+  // Extract only key=value parts from each cookie string
+  adminCookie = rawCookies.map(c => c.split(';')[0]).join('; ');
 
   console.log("Admin Cookie:", adminCookie);
 });
+
 
 afterEach(async () => {
   // Clean up test patients and rooms after each test
