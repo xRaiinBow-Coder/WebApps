@@ -382,7 +382,8 @@ app.delete("/room/:id", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
-module.exports = app; 
+module.exports = { app, server };
+
 
 app.listen(3000, "0.0.0.0", () => {
   console.log("Server running on port 3000");

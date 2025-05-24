@@ -1,6 +1,6 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const app = require("./index"); 
+const { app, server } = require("./index");
 const Patient = mongoose.model("Patient");
 const Room = mongoose.model("Room");
 const Account = mongoose.model("Account");
@@ -38,6 +38,7 @@ afterEach(async () => {
 afterAll(async () => {
   await Account.deleteMany({ test: true });
   await mongoose.connection.close();
+  server.close();
 });
 
 describe("Patient System Tests", () => {
