@@ -58,6 +58,9 @@
 <body>
   <div class="container">
     <h1 class="NewPatient">Edit Patient</h1>
+
+    <% const isolationList = Array.isArray(patient.isolation) ? patient.isolation : []; %>
+
     <form action="/patient/<%= patient._id %>?_method=PUT" method="POST" class="needs-validation" novalidate>
       <div class="NewPatient">
         <label for="name" class="form-label">Full Name</label>
@@ -85,7 +88,7 @@
       <div class="Allergies">
         <label for="allergies" class="form-label">Allergies (comma-separated)</label>
         <input type="text" class="form-control" id="allergies" name="allergies" value="<%= patient.allergies.join(', ') %>">
-        <div class="form-text">Separate multiple allergies with commas.</div>
+        <div class="form-text">Leave blank if none.</div>
       </div>
 
       <div class="Medical" id="medicalConditionsGroup">
@@ -97,19 +100,19 @@
       <div class="IsolationConditions">
         <label class="form-label">Isolation Status</label>
         <div class="form-check">
-          <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid" <%= patient.isolation?.includes('covid') ? 'checked' : '' %>>
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="covid" id="covid" <%= isolationList.includes('covid') ? 'checked' : '' %>>
           <label class="form-check-label" for="covid">COVID-19</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis" <%= patient.isolation?.includes('tuberculosis') ? 'checked' : '' %>>
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="tuberculosis" id="tuberculosis" <%= isolationList.includes('tuberculosis') ? 'checked' : '' %>>
           <label class="form-check-label" for="tuberculosis">Tuberculosis</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola" <%= patient.isolation?.includes('ebola') ? 'checked' : '' %>>
+          <input class="form-check-input isolation-checkbox" type="checkbox" name="ebola" id="ebola" <%= isolationList.includes('ebola') ? 'checked' : '' %>>
           <label class="form-check-label" for="ebola">Ebola</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="none" id="none" <%= !patient.isolation?.length ? 'checked' : '' %>>
+          <input class="form-check-input" type="checkbox" name="none" id="none" <%= isolationList.length === 0 ? 'checked' : '' %>>
           <label class="form-check-label" for="none">None</label>
         </div>
         <div class="form-text">Select all that apply. Select "None" if no isolation required.</div>
@@ -121,11 +124,11 @@
           <option value="">Select room</option>
           <% let hasAvailableRoom = false; %>
           <% rooms.forEach(room => {
-               const availableSpots = room.capacity - room.occupants.length + (room._id.toString() === patient.roomId?.toString() ? 1 : 0);
+               const availableSpots = room.capacity - room.occupants.length;
                if (availableSpots > 0) {
                  hasAvailableRoom = true;
           %>
-            <option value="<%= room._id %>" <%= room._id.toString() === patient.roomId?.toString() ? 'selected' : '' %>>
+            <option value="<%= room._id %>" <%= patient.roomId === room._id ? 'selected' : '' %>>
               Room <%= room.number %> — <%= availableSpots %> spot(s)
               <% if (room.type === 'isolation') { %>[Isolation]<% } %>
             </option>
@@ -137,7 +140,7 @@
         <div class="invalid-feedback">Please select a room with available capacity.</div>
       </div>
 
-      <button type="submit" class="btn btn-primary">Update</button>
+      <button type="submit" class="btn btn-primary">Update Patient</button>
       <a href="/patients" class="btn btn-secondary ms-2">Back to List</a>
     </form>
   </div>
@@ -146,29 +149,30 @@
   <script>
     (function () {
       'use strict';
-      var forms = document.querySelectorAll('.needs-validation');
-      Array.prototype.slice.call(forms).forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-          const isolationCheckboxes = form.querySelectorAll('input[type="checkbox"][name="covid"], input[type="checkbox"][name="tuberculosis"], input[type="checkbox"][name="ebola"], input[type="checkbox"][name="none"]');
-          let noneChecked = false;
-          let othersChecked = false;
-          isolationCheckboxes.forEach(cb => {
-            if (cb.name === 'none') noneChecked = cb.checked;
-            else if (cb.checked) othersChecked = true;
-          });
-          if (noneChecked && othersChecked) {
-            event.preventDefault();
-            alert('Please select either "None" or other isolation options, not both.');
-            return;
-          }
+      const forms = document.querySelectorAll('.needs-validation');
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            const isolationCheckboxes = form.querySelectorAll('input[type="checkbox"][name="covid"], input[type="checkbox"][name="tuberculosis"], input[type="checkbox"][name="ebola"], input[type="checkbox"][name="none"]');
+            let noneChecked = false;
+            let othersChecked = false;
+            isolationCheckboxes.forEach(cb => {
+              if (cb.name === 'none') noneChecked = cb.checked;
+              else if (cb.checked) othersChecked = true;
+            });
+            if (noneChecked && othersChecked) {
+              event.preventDefault();
+              alert('Please select either "None" or other isolation options, not both.');
+              return;
+            }
 
-          if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          form.classList.add('was-validated');
-        }, false);
-      });
+            if (!form.checkValidity()) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+          }, false);
+        });
     })();
 
     const covidCB = document.getElementById('covid');
@@ -180,13 +184,21 @@
 
     function updateMedicalConditionsVisibility() {
       const anyIsolationChecked = isolationCheckboxes.some(cb => cb.checked);
-      medicalGroup.style.display = anyIsolationChecked ? 'none' : 'block';
+      if (anyIsolationChecked) {
+        medicalGroup.style.display = 'none';
+        noneCB.checked = false;
+      } else {
+        medicalGroup.style.display = 'block';
+        if (![covidCB.checked, tbCB.checked, ebolaCB.checked].some(Boolean)) {
+          noneCB.checked = true;
+        }
+      }
     }
 
     noneCB.addEventListener('change', () => {
       if (noneCB.checked) {
         isolationCheckboxes.forEach(cb => cb.checked = false);
-        updateMedicalConditionsVisibility();
+        medicalGroup.style.display = 'block';
       }
     });
 
