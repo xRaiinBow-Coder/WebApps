@@ -36,7 +36,6 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await Account.deleteMany({ test: true });
   await mongoose.connection.close();
   server.close();
 });
