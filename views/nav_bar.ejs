@@ -4,6 +4,9 @@
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
+    <li class="nav-item d-flex align-items-center text-light me-3">
+          Logged in as: <strong> <%= session.username || 'Guest' %></strong>
+    </li>
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
@@ -15,10 +18,6 @@
         </li>
         <li class="nav-item">
           <a class="nav-link <% if (active === 'rooms') { %>active<% } %>" href="/rooms">Rooms</a>
-        </li>
-
-        <li class="nav-item d-flex align-items-center text-light me-3">
-          Logged in as: <strong><%= session.username || 'Guest' %></strong>
         </li>
 
         <li class="nav-item">
