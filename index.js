@@ -274,16 +274,12 @@ app.get("/patient/:id/edit", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
-
-    const rooms = await Room.find(); // ✅ Fetch available rooms
-
-    res.render("edit_patient", { patient, rooms }); // ✅ Pass rooms to EJS
+    res.render("edit_patient", { patient });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching patient");
   }
 });
-
 
 app.put("/patient/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
