@@ -67,6 +67,7 @@ const Account = mongoose.model("Account", AccountSchema);
 })();
 
 
+
 app.use(session({
   secret: 'myKey1999', 
   resave: false,
@@ -226,13 +227,8 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
       }
     }
 
-    // Assign patient to the room
     assignedRoom.occupants.push(newPatient._id);
     await assignedRoom.save();
-
-    // 🔥 FIX: Assign roomId to the patient
-    newPatient.roomId = assignedRoom._id;
-    await newPatient.save();
 
     res.redirect("/patients");
   } catch (error) {
@@ -241,14 +237,13 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
-
 app.get("/patient/:id", isAuthenticated, async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id).populate("roomId");
+    const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).send("Patient Not Found");
-
+    const room = await Room.findOne({ occupants: patient._id });
     const rooms = await Room.find().populate("occupants");
-    res.render("patient", { patient, rooms, session: req.session });
+    res.render("patient", { patient, room, rooms, session: req.session });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching patient");
