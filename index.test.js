@@ -11,7 +11,6 @@ let adminCookie;
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
 
-  // Clean up test accounts before tests start
   await Account.deleteMany({ test: true });
 
   agent = request.agent(app);
@@ -26,20 +25,14 @@ beforeAll(async () => {
   if (!rawCookies) {
     throw new Error("Admin login failed: no cookie returned");
   }
-  // Extract only key=value parts from each cookie string
+
   adminCookie = rawCookies.map(c => c.split(';')[0]).join('; ');
 
   console.log("Admin Cookie:", adminCookie);
 });
 
-// Remove afterEach cleanup to avoid deleting data between tests
-// afterEach(async () => {
-//   await Patient.deleteMany({ test: true });
-//   await Room.deleteMany({ test: true });
-// });
 
 afterAll(async () => {
-  // Delete ONLY test data once all tests finish
   const deletedPatients = await Patient.deleteMany({ test: true });
   console.log(`Deleted ${deletedPatients.deletedCount} test patients`);
 
@@ -83,7 +76,7 @@ describe("Patient System Tests", () => {
         test: true,
       });
 
-    expect(res.status).toBe(302); // Redirect after successful post
+    expect(res.status).toBe(302); 
 
     const patient = await Patient.findOne({ name: "Test Patient" });
     expect(patient).toBeTruthy();
