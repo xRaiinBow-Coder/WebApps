@@ -9,23 +9,29 @@ let agent;
 let adminCookie;
 
 beforeAll(async () => {
-  await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
 
+  
   await Account.deleteMany({ test: true });
 
   agent = request.agent(app);
-  await agent
+
+  
+  const loginRes = await agent
     .post("/login")
     .type("form")
     .send({ username: "admin", password: "password123" })
     .expect(302);
 
-  const loginRes = await agent.get("/dashboard");
+
   adminCookie = loginRes.headers["set-cookie"];
+
+
+  if (!adminCookie) {
+    throw new Error("Admin login failed: no cookie returned");
+  }
 });
+
 
 afterEach(async () => {
   await Patient.deleteMany({ test: true });
