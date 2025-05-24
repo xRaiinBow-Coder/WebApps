@@ -11,6 +11,7 @@ let adminCookie;
 beforeAll(async () => {
   await mongoose.connect("mongodb://20.0.153.128:10999/KieranDB");
 
+  // Clean up test accounts before tests start
   await Account.deleteMany({ test: true });
 
   agent = request.agent(app);
@@ -31,16 +32,23 @@ beforeAll(async () => {
   console.log("Admin Cookie:", adminCookie);
 });
 
-
-afterEach(async () => {
-  // Clean up test patients and rooms after each test
-  await Patient.deleteMany({ test: true });
-  await Room.deleteMany({ test: true });
-});
+// Remove afterEach cleanup to avoid deleting data between tests
+// afterEach(async () => {
+//   await Patient.deleteMany({ test: true });
+//   await Room.deleteMany({ test: true });
+// });
 
 afterAll(async () => {
-  // Clean up test accounts and close connections
-  await Account.deleteMany({ test: true });
+  // Delete ONLY test data once all tests finish
+  const deletedPatients = await Patient.deleteMany({ test: true });
+  console.log(`Deleted ${deletedPatients.deletedCount} test patients`);
+
+  const deletedRooms = await Room.deleteMany({ test: true });
+  console.log(`Deleted ${deletedRooms.deletedCount} test rooms`);
+
+  const deletedAccounts = await Account.deleteMany({ test: true });
+  console.log(`Deleted ${deletedAccounts.deletedCount} test accounts`);
+
   await mongoose.connection.close();
   await new Promise((resolve) => server.close(resolve));
 });
