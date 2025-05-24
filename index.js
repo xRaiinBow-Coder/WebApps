@@ -144,12 +144,17 @@ app.post("/logout", (req, res) => {
 app.get("/dashboard", isAuthenticated, async (req, res) => {
   try {
     const rooms = await Room.find().populate("occupants");
-    res.render("dashboard", { rooms, session: req.session });
+    res.render("dashboard", {
+      rooms,
+      session: req.session,
+      active: 'dashboard' // if you want to set active nav item
+    });
   } catch (error) {
     console.error("Dashboard Error:", error);
     res.status(500).send("Error loading dashboard");
   }
 });
+
 
 
 app.get("/patients", isAuthenticated, async (req, res) => {

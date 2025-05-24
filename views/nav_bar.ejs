@@ -16,6 +16,11 @@
         <li class="nav-item">
           <a class="nav-link <% if (active === 'rooms') { %>active<% } %>" href="/rooms">Rooms</a>
         </li>
+
+        <li class="nav-item d-flex align-items-center text-light me-3">
+          Logged in as: <strong><%= session.username || 'Guest' %></strong>
+        </li>
+
         <li class="nav-item">
           <form action="/logout" method="POST" class="d-inline">
             <button type="submit" class="btn btn-outline-light ms-3">Logout</button>
