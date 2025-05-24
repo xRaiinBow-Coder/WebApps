@@ -36,15 +36,8 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await Account.deleteMany({ test: true });
-  await mongoose.connection.close();
-
-  await new Promise((resolve, reject) => {
-    server.close((err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+  await mongoose.connection.close(); // Close DB connection
+  await new Promise(resolve => server.close(resolve)); // Close server
 });
 
 describe("Patient System Tests", () => {
