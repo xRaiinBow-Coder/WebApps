@@ -122,6 +122,7 @@ app.post("/login", async (req, res) => {
       return res.render("login", { error: "Invalid username or password" });
     }
     req.session.userId = user._id;
+    req.session.username = user.username;  // <-- add this line
     req.session.role = user.role;
     res.redirect("/dashboard");
   } catch (error) {
@@ -129,6 +130,7 @@ app.post("/login", async (req, res) => {
     res.render("login", { error: "Server error. Try again later." });
   }
 });
+
 
 app.post("/logout", (req, res) => {
   req.session.destroy(err => {
