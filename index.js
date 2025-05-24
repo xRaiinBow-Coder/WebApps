@@ -238,11 +238,11 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
 
 app.get("/patient/:id", isAuthenticated, async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    const patient = await Patient.findById(req.params.id).populate("roomId");
     if (!patient) return res.status(404).send("Patient Not Found");
-    const room = await Room.findOne({ occupants: patient._id });
+
     const rooms = await Room.find().populate("occupants");
-    res.render("patient", { patient, room, rooms, session: req.session });
+    res.render("patient", { patient, rooms, session: req.session });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching patient");
