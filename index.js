@@ -32,7 +32,8 @@ const PatientSchema = new mongoose.Schema({
     covid: { type: Boolean, default: false },
     tuberculosis: { type: Boolean, default: false },
     ebola: { type: Boolean, default: false },
-  }
+  },
+   test: { type: Boolean, default: false },
 });
 const Patient = mongoose.model("Patient", PatientSchema);
 
@@ -41,6 +42,7 @@ const RoomSchema = new mongoose.Schema({
   type: { type: String, required: true },
   capacity: { type: Number, required: true },
   occupants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Patient' }],
+  test: { type: Boolean, default: false },
 });
 const Room = mongoose.model("Room", RoomSchema);
 
@@ -188,6 +190,7 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
       allergies,
       medicalConditions,
       isolation,
+      test: req.body.test === 'true' || req.body.test === true,
     });
     await newPatient.save();
 
