@@ -226,8 +226,13 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
       }
     }
 
+    // Assign patient to the room
     assignedRoom.occupants.push(newPatient._id);
     await assignedRoom.save();
+
+    // 🔥 FIX: Assign roomId to the patient
+    newPatient.roomId = assignedRoom._id;
+    await newPatient.save();
 
     res.redirect("/patients");
   } catch (error) {
@@ -235,6 +240,7 @@ app.post("/patient", isAuthenticated, isAdmin, async (req, res) => {
     res.status(500).send("Error adding patient");
   }
 });
+
 
 app.get("/patient/:id", isAuthenticated, async (req, res) => {
   try {
