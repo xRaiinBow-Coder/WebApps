@@ -44,3 +44,4 @@ output "docker_image" {
 output "docker_container" {
   value = docker_container.app.name
 }
+
